@@ -1,0 +1,58 @@
+import ShotgunApiClient from '../client';
+import { PaginatedRecordResponse } from '../paginated-record-response';
+
+interface Options {
+  entity: string;
+  filters: Record<string, any>[];
+  fields?: string | string[];
+  sort?: string | string[];
+  pageSize?: number;
+  pageNumber?: number;
+}
+
+/**
+ * Query entities with complex filters.
+ * Consult documentation for propoer syntax
+ * https://developer.shotgunsoftware.com/rest-api/#searching
+ *
+ * @param  {string}       entity       - Entity type.
+ * @param  {Object}       filters      - Filter input (array or hash format).
+ * @param  {Array|String} [fields]     - List of fields to show.
+ * @param  {Array|String} [sort]       - List of ordering fields.
+ * @param  {number}       [pageSize]   - Upper limit of items shown on response page.
+ * @param  {number}       [pageNumber] - Position in list of items to start querying from.
+ * @return {PaginatedRecordResponse} Query results.
+ */
+export async function entitySearch(
+  this: ShotgunApiClient,
+  { entity, filters, fields, sort, pageSize, pageNumber }: Options,
+) {
+  let query: Record<string, any> = {
+    page: {
+      size: pageSize || 500,
+      number: pageNumber || 1,
+    },
+  };
+
+  if (Array.isArray(fields)) fields = fields.join(',');
+  if (fields) query.fields = fields;
+
+  if (Array.isArray(sort)) sort = sort.join(',');
+  if (sort) query.sort = sort;
+
+  let contentType = Array.isArray(filters) ? 'array' : 'hash';
+
+  let body = { filters };
+
+  let respBody = await this.request({
+    method: 'POST',
+    path: `/entity/${entity}/_search`,
+    headers: {
+      'Content-Type': `application/vnd+shotgun.api3_${contentType}+json`,
+    },
+    query,
+    body,
+  });
+  respBody._pageSize = pageSize;
+  return new PaginatedRecordResponse(respBody);
+}
