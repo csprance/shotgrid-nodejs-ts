@@ -1,5 +1,5 @@
 import retry from 'async-retry';
-import fetch from 'node-fetch';
+import fetch from 'isomorphic-unfetch';
 import qs from 'qs';
 import util from 'util';
 
@@ -226,14 +226,12 @@ export default class ShotgunApiClient {
     return respBody;
   }
 
-  async fetchWithRetry(...args: any[]) {
+  async fetchWithRetry(...args: [any, any]) {
     let { debug } = this;
 
     return retry(
       async (_, attemptNumber) => {
         if (debug) console.log(`Request attempt #${attemptNumber}`);
-
-        // @ts-ignore
         let resp = await fetch(...args);
         if (
           attemptNumber <= RETRY_COUNT &&
